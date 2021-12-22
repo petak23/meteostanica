@@ -1,0 +1,77 @@
+parameters:
+	font: 'LiberationMono-Regular.ttf'
+	fontBold: 'LiberationMono-Bold.ttf'
+
+application:
+	errorPresenter: Error
+	mapping:
+		*: App\*Module\Presenters\*Presenter
+
+session:
+	expiration: 14 days
+	cookieSamesite: Strict
+	cacheLimiter: public
+
+services:
+	- App\Services\MailService(%from%, %admin% )
+	- App\Services\CrontaskDataSource
+	- App\Services\EnrollDataSource
+	- App\Services\RaDataSource
+	- App\Services\ChartDataSource
+	- App\Services\MsgProcessor
+	- App\Services\Config( %cronAllowed%, %masterPassword%, %links%, %title%, %font%, %fontBold%, %dataRetentionDays%,  %minYear%, )
+	- App\Services\InventoryDataSource
+	security.passwords: Nette\Security\Passwords(::PASSWORD_BCRYPT, [cost: 11])		# zde se nastavuji pozadovane parametry hesla https://doc.nette.org/cs/3.0/passwords
+	router: App\Router\RouterFactory::createRouter
+	authenticator: App\Services\Authenticator
+
+#forms:
+	#messages:
+	#	EQUAL: 'Zadajte %s.'
+	#	NOT_EQUAL: 'Táto hodnota by nemala byť %s.'
+	#	FILLED: 'Toto pole je povinné.'
+	#	BLANK: 'Toto pole by malo byť prázdne.'
+	#	MIN_LENGTH: 'Zadajte, prosím, aspoň %d znakou.'
+	#	MAX_LENGTH: 'Zadajte, prosím, maximálne %d znakou.'
+	#	LENGTH: 'Zadajte, prosím, hodnotu %d až %d znakou dlhú.'
+	#	URL: 'Zadajte, prosím, platnú URL.'
+	#	INTEGER: 'Zadajte, prosím, platné celé číslo.'
+	#	FLOAT: 'Zadajte, prosím, platné číslo.'
+	#	MIN: 'Zadajte, prosím, hodnotu väčšiu alebo rovnú %d.'
+	#	MAX: 'Zadajte, prosím, hodnotu menšiu alebo rovnú %d.'
+	#	RANGE: 'Zadajte, prosím, hodnotu medzi %d a %d.'
+	#	MAX_FILE_SIZE: 'Veľkosť nahraného súboru môže byť najviac %d bytov.'
+	#	MAX_POST_SIZE: 'Nahrané dáta prekračujú limit %d bytov.'
+	#	MIME_TYPE: 'Nahraný súbor nie je v očakávanom formáte.'
+	#	IMAGE: 'Nahraný súbor musí býť obrázok vo formáte JPEG, GIF, PNG alebo WebP.'
+	#	Nette\Forms\Controls\SelectBox::VALID: 'Vyberte, prosím, platnú možnosť.'
+	#	Nette\Forms\Controls\UploadControl::VALID: 'Pri nahrávaní súboru došlo k chybe.'
+	#	Nette\Forms\Controls\CsrfProtection::PROTECTION: 'Vaša relácia vypršala. Vráťte sa na domovskú stránku a skúste to znovu.'
+
+http:
+	# ovlivňuje hlavičku X-Frame-Options
+	frames: SAMEORIGIN
+	# na https budou cookie Secure
+	cookieSecure: auto
+	# hlavičky, které se s každým požadavkem odešlou
+	headers:
+		X-Content-Type-Options: nosniff
+		X-XSS-Protection: '1; mode=block'
+
+includes:
+  - services.neon
+  - components.neon
+
+extensions:
+  webpack: Contributte\Webpack\DI\WebpackExtension(%debugMode%, %consoleMode%)
+
+webpack:
+  build:
+    directory: %wwwDir%/dist
+    publicPath: dist/
+  #devServer: # Tato cast je presunuta do local.neon
+  #  enabled: false
+  #  url: 'http://http://iot.echo-msz.eu/www/dist'
+  manifest:  # Cez tento subor je prepojenie na filename: '[name].[contenthash:8].[ext]' vo webpack-u
+    name: webpack-assets.json  # ./www/dist/webpack-assets.json
+    mapper: Contributte\Webpack\Manifest\Mapper\AssetsWebpackPluginMapper
